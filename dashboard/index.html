@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Negative Transfer Detection Dashboard</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css?v=2">
+</head>
+<body>
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+  <div class="orb orb-3"></div>
+  <div class="container">
+
+    <!-- HEADER -->
+    <header class="glass-panel main-header">
+      <div class="header-left">
+        <div class="header-badge">META-MODEL v2</div>
+        <h1>Negative Transfer Detection</h1>
+        <p>Cross-Domain Patent Classification · Supervised Meta-Model · 7-Feature Ensemble</p>
+      </div>
+      <div class="header-kpis" id="headerKpis"></div>
+    </header>
+
+    <!-- STAT CARDS -->
+    <div class="stat-cards">
+      <div class="stat-card glass-panel">
+        <div class="stat-icon indigo">&#9889;</div>
+        <div class="stat-body"><div class="stat-value" id="sc-total">--</div><div class="stat-label">Total Pairs</div></div>
+      </div>
+      <div class="stat-card glass-panel">
+        <div class="stat-icon red">&#9888;</div>
+        <div class="stat-body"><div class="stat-value text-red" id="sc-neg">--</div><div class="stat-label">Negative Transfers</div></div>
+      </div>
+      <div class="stat-card glass-panel">
+        <div class="stat-icon green">&#10003;</div>
+        <div class="stat-body"><div class="stat-value text-green" id="sc-safe">--</div><div class="stat-label">Safe Transfers</div></div>
+      </div>
+      <div class="stat-card glass-panel">
+        <div class="stat-icon yellow">&#9670;</div>
+        <div class="stat-body"><div class="stat-value text-yellow" id="sc-conf">--</div><div class="stat-label">Avg Confidence</div></div>
+      </div>
+      <div class="stat-card glass-panel">
+        <div class="stat-icon purple">&#8644;</div>
+        <div class="stat-body"><div class="stat-value text-purple" id="sc-shift">--</div><div class="stat-label">Avg Label Shift</div></div>
+      </div>
+    </div>
+
+    <!-- INTERACTIVE TOOL -->
+    <section class="glass-panel section-interactive">
+      <div class="section-header">
+        <h2>Interactive Transfer Prediction</h2>
+        <p class="subtitle">Select source &amp; target — all 7 meta-model signals evaluated live.</p>
+      </div>
+      <div class="interactive-grid">
+        <div class="selector-col">
+          <div class="input-field">
+            <label>Source Domain</label>
+            <select id="sourceSelect"></select>
+          </div>
+          <div class="arrow-icon">&#8594;</div>
+          <div class="input-field">
+            <label>Target Domain</label>
+            <select id="targetSelect"></select>
+          </div>
+        </div>
+        <div class="result-card" id="resultCard">
+          <div class="result-top">
+            <div class="result-pair" id="resPair">Select a pair</div>
+            <span class="decision-badge" id="decisionBadge">&#8212;</span>
+          </div>
+          <div class="feature-grid">
+            <div class="feat-item"><span class="feat-label">Embedding Similarity</span><span class="feat-val" id="fSim">--</span><div class="feat-bar"><div class="feat-bar-fill blue" id="fSimBar" style="width:0%"></div></div></div>
+            <div class="feat-item"><span class="feat-label">Delta F1 (&#916;F1)</span><span class="feat-val" id="fDelta">--</span><div class="feat-bar"><div class="feat-bar-fill" id="fDeltaBar" style="width:0%"></div></div></div>
+            <div class="feat-item"><span class="feat-label">Label Shift (JSD)</span><span class="feat-val" id="fShift">--</span><div class="feat-bar"><div class="feat-bar-fill red" id="fShiftBar" style="width:0%"></div></div></div>
+            <div class="feat-item"><span class="feat-label">Vocab Overlap</span><span class="feat-val" id="fVocab">--</span><div class="feat-bar"><div class="feat-bar-fill blue" id="fVocabBar" style="width:0%"></div></div></div>
+            <div class="feat-item"><span class="feat-label">Avg Confidence</span><span class="feat-val" id="fConf">--</span><div class="feat-bar"><div class="feat-bar-fill green" id="fConfBar" style="width:0%"></div></div></div>
+            <div class="feat-item"><span class="feat-label">Prediction Entropy</span><span class="feat-val" id="fEnt">--</span><div class="feat-bar"><div class="feat-bar-fill yellow" id="fEntBar" style="width:0%"></div></div></div>
+            <div class="feat-item"><span class="feat-label">Error Rate</span><span class="feat-val" id="fErr">--</span><div class="feat-bar"><div class="feat-bar-fill red" id="fErrBar" style="width:0%"></div></div></div>
+          </div>
+          <div class="signal-row">
+            <div class="signal-box"><div class="signal-label">Meta-Model</div><div class="signal-val" id="sigMeta">--</div></div>
+            <div class="signal-box"><div class="signal-label">Meta Conf</div><div class="signal-val" id="sigMetaConf">--</div></div>
+            <div class="signal-box"><div class="signal-label">Ensemble Score</div><div class="signal-val" id="sigEns">--</div></div>
+            <div class="signal-box"><div class="signal-label">Error Level</div><div class="signal-val" id="sigErr">--</div></div>
+          </div>
+          <div class="reason-box" id="reasonBox">
+            <strong>Reason:</strong> <span id="reasonText">Select a domain pair to see the decision rationale.</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CHARTS ROW -->
+    <div class="charts-row">
+      <section class="glass-panel chart-panel wide">
+        <h2>Performance Visualizations</h2>
+        <div class="tabs">
+          <button class="tab-btn active" onclick="showTab('scatter',this)">Similarity vs &#916;F1</button>
+          <button class="tab-btn" onclick="showTab('bar',this)">Baseline vs Transfer</button>
+          <button class="tab-btn" onclick="showTab('heatmap',this)">Feature Heatmap</button>
+          <button class="tab-btn" onclick="showTab('decisions',this)">Decision Summary</button>
+          <button class="tab-btn" onclick="showTab('roc',this)">ROC Curve</button>
+          <button class="tab-btn" onclick="showTab('calibration',this)">Calibration</button>
+          <button class="tab-btn" onclick="showTab('threshold',this)">Precision vs Threshold</button>
+          <button class="tab-btn" onclick="showTab('confmat',this)">Confusion Matrix</button>
+          <button class="tab-btn" onclick="showTab('risk',this)">Transfer Risk</button>
+        </div>
+        <div class="tab-content active" id="scatter"><div class="img-wrap"><img src="../plots/scatter_similarity_vs_deltaF1.png" alt="Scatter"></div></div>
+        <div class="tab-content" id="bar"><div class="img-wrap"><img src="../plots/bar_baseline_vs_transfer.png" alt="Bar"></div></div>
+        <div class="tab-content" id="heatmap"><div class="img-wrap"><img src="../plots/feature_correlation_heatmap.png" alt="Heatmap"></div></div>
+        <div class="tab-content" id="decisions"><div class="img-wrap"><img src="../plots/meta_decision_summary.png" alt="Decisions"></div></div>
+        <div class="tab-content" id="roc"><div class="img-wrap"><img src="../plots/roc_curve.png" alt="ROC Curve"></div></div>
+        <div class="tab-content" id="calibration"><div class="img-wrap"><img src="../plots/calibration_curve.png" alt="Calibration"></div></div>
+        <div class="tab-content" id="threshold"><div class="img-wrap"><img src="../plots/precision_vs_threshold.png" alt="Precision vs Threshold"></div></div>
+        <div class="tab-content" id="confmat"><div class="img-wrap"><img src="../plots/confusion_matrix.png" alt="Confusion Matrix"></div></div>
+        <div class="tab-content" id="risk"><div class="img-wrap"><img src="../plots/transfer_risk_curve.png" alt="Transfer Risk"></div></div>
+      </section>
+      <section class="glass-panel chart-panel narrow">
+        <h2>Feature Importance</h2>
+        <p class="subtitle">What drives the meta-model?</p>
+        <div id="importanceChart" class="importance-chart"></div>
+      </section>
+    </div>
+
+    <!-- RESULTS TABLE -->
+    <section class="glass-panel table-section">
+      <div class="section-header row-between">
+        <div>
+          <h2>All Transfer Pair Results</h2>
+          <p class="subtitle">Full 7-feature dataset used to train the meta-model.</p>
+        </div>
+        <div class="filter-bar">
+          <button class="filter-btn active" data-filter="all">All</button>
+          <button class="filter-btn" data-filter="neg">Negative</button>
+          <button class="filter-btn" data-filter="safe">Safe</button>
+        </div>
+      </div>
+      <div class="table-wrapper">
+        <table id="resultsTable">
+          <thead>
+            <tr>
+              <th>Pair</th><th>Sim</th><th>Base F1</th><th>Trans F1</th><th>&#916;F1</th>
+              <th>Lbl Shift</th><th>Vocab Ovlp</th><th>Avg Conf</th><th>Entropy</th><th>Err Rate</th><th>Decision</th>
+            </tr>
+          </thead>
+          <tbody id="resultsBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- DECISION REPORTS -->
+    <section class="glass-panel report-section">
+      <div class="section-header">
+        <h2>Transfer Decision Reports</h2>
+        <p class="subtitle">Per-pair: meta-model prediction + ensemble score + validation override + reason.</p>
+      </div>
+      <div class="reports-grid" id="reportsGrid"></div>
+    </section>
+
+  </div>
+  <script src="data.js?v=2"></script>
+  <script src="script.js?v=2"></script>
+</body>
+</html>
